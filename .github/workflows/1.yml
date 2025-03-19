@@ -1,0 +1,57 @@
+name: Step 1, Open an issue
+
+on:
+  workflow_dispatch:
+  issues:
+    types:
+      - opened
+
+permissions:
+  contents: write
+
+jobs:
+  get_current_step:
+    name: Check current step number
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - id: get_step
+        run: |
+          if [ -f ./.github/steps/-step.txt ]; then
+            echo "current_step=$(cat ./.github/steps/-step.txt)" >> $GITHUB_OUTPUT
+          else
+            echo "current_step=1" >> $GITHUB_OUTPUT  # Default to step 1 if file doesn't exist
+          fi
+    outputs:
+      current_step: ${{ steps.get_step.outputs.current_step }}
+
+  on_open_an_issue:
+    name: On open an issue
+    needs: get_current_step
+
+    if: >-
+      ${{ !github.event.repository.is_template
+          && needs.get_current_step.outputs.current_step == 1
+          && contains(github.event.issue.title, 'update-game') }}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Update step file to 2.1-assign-labels.md
+        run: |
+          mv step/1-create-an-issue.md step/2.1-assign-labels.md
+          echo "Updated step from 1 to 2.1" >> step/2.1-assign-labels.md
+
+      - name: Commit changes
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+          git add step/2.1-assign-labels.md
+          git commit -m "Updated to step 2.1 - Assign Labels"
+          git push

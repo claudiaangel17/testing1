@@ -1,0 +1,46 @@
+name: Update to Step 1
+
+on:
+  workflow_dispatch:  # Allows manual triggering of the workflow
+  push:
+    branches:
+      - main  # Triggers the workflow on push to the main branch
+
+permissions:
+  contents: write  # Grants permission to modify repository contents
+
+jobs:
+  update_step_file:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify current step
+        run: |
+          current_step=$(cat .github/steps/step.txt)
+          echo "Current step is $current_step"
+          if [ "$current_step" != "0" ]; then
+            echo "Not at step 0; exiting."
+            exit 0
+
+      - name: Update 0-welcome.md to 1-create-an-issue.md
+        run: |
+          echo "Updating 0-welcome.md to 1-create-an-issue.md"
+          mv .github/steps/0-welcome.md .github/steps/1-create-an-issue.md
+          echo "Content for step 1" > .github/steps/1-create-an-issue.md
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add .github/steps/1-create-an-issue.md
+          git commit -m "Update to step 1"
+          git push origin main
+
+      - name: Update step.txt to reflect current step
+        run: |
+          echo "1" > .github/steps/step.txt
+          git add .github/steps/step.txt
+          git commit -m "Advance to step 1"
+          git push origin main
